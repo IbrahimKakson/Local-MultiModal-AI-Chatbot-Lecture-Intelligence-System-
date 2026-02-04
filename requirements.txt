@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+chainlit
+faster-whisper
+pypdf
+chroma-db
+sentence-transformers
+pydantic
+pytest
+httpx
