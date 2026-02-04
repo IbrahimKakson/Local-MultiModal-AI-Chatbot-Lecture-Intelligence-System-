@@ -1,8 +1,35 @@
-venv/
-data/
-*.mp3
-*.gguf
-chroma_db/
+# --- Python Integrity ---
 __pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environment (NEVER push) ---
+venv/
+env/
+.venv/
+
+# --- Environment Variables (Secrets) ---
 .env
+.env.local
+
+# --- Data & Privacy (CRITICAL) ---
+# do NOT upload the PDFs, MP3s, MP4s or the Database to GitHub
+data/uploads/
+data/chroma_db/
+data/chroma_db/*
+
+# --- AI Models (Too big for GitHub) ---
+# Do NOT upload the 4GB Mistral model
+*.gguf
+*.bin
+*.pt
+data/models/
+
+# --- IDE Settings ---
+.vscode/
+.idea/
+*.swp
+
+# --- OS Junk ---
 .DS_Store
+Thumbs.db
