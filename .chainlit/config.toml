@@ -1,0 +1,7 @@
+[ui]
+# theme: light or dark
+theme = "light"
+# show typing/thinking indicator
+thinking = true
+# title for Chainlit UI
+title = "Lecture Intelligence System"
