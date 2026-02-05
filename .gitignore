@@ -16,7 +16,6 @@ env/
 # do NOT upload the PDFs, MP3s, MP4s or the Database to GitHub
 data/uploads/
 data/chroma_db/
-data/chroma_db/*
 
 # --- AI Models (Too big for GitHub) ---
 # Do NOT upload the 4GB Mistral model
