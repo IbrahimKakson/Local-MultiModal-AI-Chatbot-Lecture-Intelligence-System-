@@ -1,10 +1,30 @@
-fastapi
-uvicorn[standard]
-chainlit
-faster-whisper
-pypdf
-chroma-db
-sentence-transformers
-pydantic
-pytest
-httpx
+# --- Backend API (The Traffic Controller) ---
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+
+# --- Frontend UI (The Interface) ---
+chainlit>=1.0.0
+
+# --- Audio Processing (The Ears) ---
+faster-whisper>=0.10.0
+
+# --- RAG Orchestration & Data (The Logic) ---
+langchain>=0.1.0
+langchain-community>=0.0.10
+langchain-huggingface>=0.0.8
+pypdf>=4.0.0
+rank_bm25>=0.2.2
+
+# --- Database & Embeddings (The Memory) ---
+chromadb>=0.4.22
+sentence-transformers>=2.3.0
+
+# --- LLM Runtime (The Brain) ---
+# Note: Mistral 7B and Phi-2 are models you download, 
+# but this is the engine that runs them.
+llama-cpp-python>=0.2.30
+
+# --- Testing & Quality Assurance (The TDD Tools) ---
+pytest>=8.0.0
+httpx>=0.26.0   # Required for testing FastAPI endpoints
