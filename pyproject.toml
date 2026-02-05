@@ -2,7 +2,7 @@
 name = "lecture-intelligence-system"
 version = "0.1.0"
 description = "Lecture Intelligence System scaffold"
-authors = ["Your Name <you@example.com>"]
+authors = ["Ibrahim Kako"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
