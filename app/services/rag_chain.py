@@ -3,7 +3,7 @@
 This module demonstrates how to wire together PDF/audio extractors, the vector store,
 search, and the LLM engine to answer user queries.
 """
-from app.services.pdf_service import extract_text_from_pdf
+from app.services.pdf_service import PDFService
 from app.services.audio_service import transcribe_audio
 from app.services.vector_store import init_vector_store, persist_vectors
 from app.services.search_service import bm25_search
