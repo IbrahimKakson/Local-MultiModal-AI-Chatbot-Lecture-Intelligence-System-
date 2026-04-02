@@ -6,13 +6,18 @@ from app.services.vector_store import VectorStoreService
 
 @pytest.fixture(scope="module")
 def persistent_db_dir():
+    original_chroma_dir = settings.chroma_dir
     test_dir = os.path.join(settings.data_dir, "test_chroma_db")
     settings.chroma_dir = test_dir
-    yield test_dir
-    # Cleanup after test module finishes
-    if os.path.exists(test_dir):
-        # A tiny delay or retry might be needed if SQLite locks it but we assume clean teardown
-        shutil.rmtree(test_dir, ignore_errors=True)
+    try:
+        yield test_dir
+    finally:
+        settings.chroma_dir = original_chroma_dir
+        # Cleanup after test module finishes
+        if os.path.exists(test_dir):
+            # A tiny delay or retry might be needed if SQLite locks it but we assume clean teardown
+            shutil.rmtree(test_dir, ignore_errors=True)
+
 
 def test_vector_store_persistence(persistent_db_dir):
     service = VectorStoreService(collection_name="test_collection")

@@ -7,11 +7,15 @@ from app.services.search_service import SearchService
 
 @pytest.fixture(scope="module")
 def hybrid_db_dir():
+    original_chroma_dir = settings.chroma_dir
     test_dir = os.path.join(settings.data_dir, "test_hybrid_db")
     settings.chroma_dir = test_dir
-    yield test_dir
-    if os.path.exists(test_dir):
-        shutil.rmtree(test_dir, ignore_errors=True)
+    try:
+        yield test_dir
+    finally:
+        settings.chroma_dir = original_chroma_dir
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir, ignore_errors=True)
 
 def test_hybrid_search(hybrid_db_dir):
     vector_store = VectorStoreService(collection_name="hybrid_test_collection")
