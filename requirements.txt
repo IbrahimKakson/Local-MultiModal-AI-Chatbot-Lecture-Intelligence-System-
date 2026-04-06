@@ -24,7 +24,7 @@ sentence-transformers>=2.3.0
 # --- LLM Runtime (The Brain) ---
 # Note: Mistral 7B and Phi-2 are models you download, 
 # but this is the engine that runs them.
-# llama-cpp-python>=0.2.30
+llama-cpp-python>=0.2.30
 
 # --- Testing & Quality Assurance (The TDD Tools) ---
 pytest>=8.0.0
