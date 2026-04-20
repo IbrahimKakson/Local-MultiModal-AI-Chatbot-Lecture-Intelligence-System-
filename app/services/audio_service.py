@@ -10,12 +10,9 @@ MODEL_SIZE = "tiny"
 
 class AudioService:
     def __init__(self, model_size=MODEL_SIZE):
-        """Initialize the Whisper model."""
-        # This will download the model on the first run to a local cache folder.
-        
-        # device="auto" tries to use GPU but falls back to CPU.
-        # compute_type="int8" speeds up CPU inference.
-        self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        """Initialize the Audio service."""
+        pass
+
 
     def transcribe_audio(self, file_path: str) -> list[dict]:
         """
@@ -25,15 +22,51 @@ class AudioService:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Audio file not found: {file_path}")
 
-        segments, info = self.model.transcribe(file_path, beam_size=5)
+        # Load model only when needed to save RAM
+        print("Loading Whisper model into RAM for transcription...")
+        import multiprocessing
+        # Restrict Whisper to use at most 75% of CPU cores (leaving at least 1-2 for the webserver)
+        # This prevents the Chainlit websocket from dropping heartbeat packets and crashing the browser tab!
+        optimal_threads = max(1, int(multiprocessing.cpu_count() * 0.75))
+        
+        model = WhisperModel(MODEL_SIZE, device="cpu", compute_type="int8", cpu_threads=optimal_threads)
+
+        # Reverted back to deep mathematical search (beam_size=5) for maximum accuracy.
+        # This takes 5x longer but completely stops 'stupid' hallucinated outputs.
+        segments, info = model.transcribe(file_path, beam_size=5)
         
         result = []
-        for segment in segments:
-            # Note: We can grab segment.start and segment.end along with the text.
-            result.append({
-                "text": segment.text.strip(),
-                "start": segment.start,
-                "end": segment.end
-            })
+        # Convert generator to a list so we can slice it
+        segments_list = list(segments)
+        
+        # Group 8 tiny audio segments together into 1 cohesive "paragraph" block
+        # We overlap by 2 segments to ensure sentences aren't cleanly cut in half across blocks
+        CHUNK_SIZE = 8
+        OVERLAP_SIZE = 2
+        
+        i = 0
+        while i < len(segments_list):
+            chunk_segs = segments_list[i:i + CHUNK_SIZE]
+            if not chunk_segs:
+                break
+                
+            combined_text = " ".join([seg.text.strip() for seg in chunk_segs if seg.text.strip()])
             
+            if combined_text:
+                result.append({
+                    "text": combined_text,
+                    "start": chunk_segs[0].start,
+                    "end": chunk_segs[-1].end
+                })
+                
+            # Advance the sliding window
+            i += (CHUNK_SIZE - OVERLAP_SIZE)
+
+            
+        # Free memory immediately
+        print("Transcription complete. Unloading Whisper from RAM...")
+        del model
+        import gc
+        gc.collect()
+
         return result

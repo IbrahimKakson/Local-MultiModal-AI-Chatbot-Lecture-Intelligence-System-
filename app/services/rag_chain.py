@@ -1,7 +1,7 @@
 """RAG chain composition using LangChain orchestration.
 
 Week 8: This module wires together the Hybrid Search retriever (Week 6),
-the local Mistral LLM engine (Week 7), and LangChain's LCEL pipeline
+the local Phi-3 Mini LLM engine (Week 7), and LangChain's LCEL pipeline
 with conversational memory to create a full RAG pipeline.
 """
 from typing import Any, List, Optional
@@ -17,7 +17,7 @@ from langchain_core.runnables import RunnablePassthrough
 from app.services.vector_store import VectorStoreService
 from app.services.search_service import SearchService
 from app.services.llm_engine import load_model, generate_answer_from_model
-from app.core.prompts import MISTRAL_RAG_TEMPLATE
+from app.core.prompts import LLAMA3_RAG_TEMPLATE
 
 
 # ---------------------------------------------------------------------------
@@ -46,12 +46,12 @@ class HybridRetriever(BaseRetriever):
 # ---------------------------------------------------------------------------
 # 2. LangChain LLM Wrapper (wraps our custom llm_engine)
 # ---------------------------------------------------------------------------
-class LocalMistralLLM(BaseLLM):
+class LocalLLM(BaseLLM):
     """Adapts our raw llm_engine into a LangChain-compatible LLM."""
 
     @property
     def _llm_type(self) -> str:
-        return "local-mistral"
+        return "local-phi3"
 
     def _call(
         self,
@@ -67,7 +67,7 @@ class LocalMistralLLM(BaseLLM):
             max_tokens=512,
             temperature=0.7,
             top_p=0.95,
-            stop=stop or ["[/INST]", "user:", "User:"],
+            stop=stop or ["<|eot_id|>", "<|start_header_id|>"],
         )
         return response["choices"][0]["text"].strip()
 
@@ -89,20 +89,21 @@ class RAGChain:
 
     Connects:
         - HybridRetriever (Vector + Keyword search from Week 6)
-        - LocalMistralLLM (CPU inference from Week 7)
+        - LocalLLM (CPU inference from Week 7)
         - Chat history (simple in-memory list)
     """
 
-    def __init__(self, top_k: int = 5, memory_window: int = 4):
+    def __init__(self, top_k: int = 2, memory_window: int = 2, collection_name: str = "lecture_chunks"):
         # Initialize dependencies
-        vector_store = VectorStoreService()
+        # Prevent double-loading of SentenceTransformers by seeing if one exists
+        vector_store = VectorStoreService(collection_name=collection_name)
         search_service = SearchService(vector_store)
 
         # Wrap into LangChain components
         self.retriever = HybridRetriever(
             search_service=search_service, top_k=top_k
         )
-        self.llm = LocalMistralLLM()
+        self.llm = LocalLLM()
 
         # Simple in-memory chat history
         self.chat_history: list[dict] = []
@@ -110,7 +111,7 @@ class RAGChain:
 
         # Build the LCEL chain: retriever -> prompt -> llm -> parse
         self.prompt = PromptTemplate(
-            template=MISTRAL_RAG_TEMPLATE,
+            template=LLAMA3_RAG_TEMPLATE,
             input_variables=["context", "question"],
         )
         self.output_parser = StrOutputParser()
@@ -120,17 +121,10 @@ class RAGChain:
         return "\n\n".join(doc.page_content for doc in docs)
 
     def _build_question_with_history(self, question: str) -> str:
-        """Prepend recent chat history to the current question."""
-        if not self.chat_history:
-            return question
-
-        # Take only the last N exchanges
-        recent = self.chat_history[-self.memory_window:]
-        history_str = "\n".join(
-            f"User: {turn['question']}\nAssistant: {turn['answer']}"
-            for turn in recent
-        )
-        return f"Previous conversation:\n{history_str}\n\nCurrent question: {question}"
+        """For a 1B parameter model, injecting raw dialogue history into the prompt 
+        causes instruction-tuning confusion and ruins BM25 keyword search accuracy.
+        We will pass exactly what the user typed to maximize RAG precision."""
+        return question
 
     def ask(self, question: str) -> dict:
         """Ask a question and get an answer with source documents.

@@ -35,7 +35,7 @@ def main():
     print("   Done. 5 chunks inserted.")
 
     # Step 2: Build the RAG Chain
-    print("\n[2/4] Building RAG chain (loading Mistral LLM)...")
+    print("\n[2/4] Building RAG chain (loading Phi-3 LLM)...")
     start = time.time()
     rag = RAGChain(top_k=3)
     print(f"   Chain ready in {time.time() - start:.2f}s.")

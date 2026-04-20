@@ -9,7 +9,7 @@ def run_benchmark():
         load_model()
     except FileNotFoundError as e:
         print(f"FAILED: {e}")
-        print("Please ensure you have downloaded 'mistral-7b-instruct-v0.2.Q4_K_M.gguf' to data/models/")
+        print("Please ensure you have downloaded 'Phi-3-mini-4k-instruct-q4.gguf' to data/models/")
         return
     except ImportError as e:
         print(f"FAILED: {e}")

@@ -22,8 +22,8 @@ chromadb>=0.4.22
 sentence-transformers>=2.3.0
 
 # --- LLM Runtime (The Brain) ---
-# Note: Mistral 7B and Phi-2 are models you download, 
-# but this is the engine that runs them.
+# Note: Phi-3 Mini is the model you download, 
+# but this is the engine that runs it.
 llama-cpp-python>=0.2.30
 
 # --- Testing & Quality Assurance (The TDD Tools) ---

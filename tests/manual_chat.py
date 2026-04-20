@@ -11,7 +11,7 @@ def run_before_demo():
     print("=" * 60)
     print("  BEFORE (Week 7): Raw LLM - No database, no memory")
     print("=" * 60)
-    print("\nLoading Mistral...")
+    print("\nLoading Phi-3...")
     load_model()
     print("Ready!\n")
 
@@ -125,6 +125,6 @@ if __name__ == "__main__":
     print("=" * 60)
     print("  BEFORE: You manually pass context. No memory. No search.")
     print("  AFTER:  The chain searches the DB automatically,")
-    print("          picks the best chunks, feeds them to Mistral,")
+    print("          picks the best chunks, feeds them to Phi-3,")
     print("          AND remembers what you said before.")
     print("=" * 60)
