@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 client = TestClient(app)
 
@@ -9,7 +9,11 @@ client = TestClient(app)
 def test_upload_pdf(MockPDFService):
     # Mock the return value to avoid running actual parsing
     mock_instance = MockPDFService.return_value
-    mock_instance.extract_text_from_pdf.return_value = ["chunk1", "chunk2"]
+    c1 = MagicMock()
+    c1.text = "chunk1"
+    c2 = MagicMock()
+    c2.text = "chunk2"
+    mock_instance.extract_text_from_pdf.return_value = [c1, c2]
     
     dummy_pdf_content = b"%PDF-1.4 dummy pdf content"
     

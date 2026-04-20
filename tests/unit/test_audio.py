@@ -40,8 +40,7 @@ def test_transcribe_audio_success(mock_whisper_model, tmp_path):
     # Run the transcription methods
     results = service.transcribe_audio(str(dummy_audio))
     
-    assert len(results) == 2
-    assert results[0]["text"] == "Hello world."
+    assert len(results) == 1
+    assert results[0]["text"] == "Hello world. This is a test."
     assert results[0]["start"] == 0.0
-    assert "start" in results[1]
-    assert "end" in results[1]
+    assert results[0]["end"] == 4.0
