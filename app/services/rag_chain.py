@@ -13,6 +13,7 @@ from langchain_core.language_models.llms import BaseLLM
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from pydantic import ConfigDict
 
 from app.services.vector_store import VectorStoreService
 from app.services.search_service import SearchService
@@ -28,8 +29,7 @@ class HybridRetriever(BaseRetriever):
     search_service: Any = None
     top_k: int = 5
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _get_relevant_documents(self, query: str, **kwargs) -> List[Document]:
         """LangChain calls this method to fetch documents for a query."""
