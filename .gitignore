@@ -18,6 +18,8 @@ data/uploads/
 data/chroma_db/
 data/test_chroma_db/
 data/test_hybrid_db/
+data/test_cross_modal_db/
+.files/
 
 # --- AI Models (Too big for GitHub) ---
 # Do NOT upload the 4GB Mistral model

@@ -1,7 +1,7 @@
 """RAG chain composition using LangChain orchestration.
 
-Week 8: This module wires together the Hybrid Search retriever (Week 6),
-the local Phi-3 Mini LLM engine (Week 7), and LangChain's LCEL pipeline
+This module wires together the Hybrid Search retriever,
+the local Llama-3.2 LLM engine, and LangChain's LCEL pipeline
 with conversational memory to create a full RAG pipeline.
 """
 from typing import Any, List, Optional
@@ -51,7 +51,7 @@ class LocalLLM(BaseLLM):
 
     @property
     def _llm_type(self) -> str:
-        return "local-phi3"
+        return "local-llama3"
 
     def _call(
         self,
@@ -88,12 +88,12 @@ class RAGChain:
     """Orchestrates the full Retrieval-Augmented Generation pipeline.
 
     Connects:
-        - HybridRetriever (Vector + Keyword search from Week 6)
-        - LocalLLM (CPU inference from Week 7)
+        - HybridRetriever (Vector + Keyword search)
+        - LocalLLM (CPU inference via Llama-3.2)
         - Chat history (simple in-memory list)
     """
 
-    def __init__(self, top_k: int = 2, memory_window: int = 2, collection_name: str = "lecture_chunks"):
+    def __init__(self, top_k: int = 2, memory_window: int = 5, collection_name: str = "lecture_chunks"):
         # Initialize dependencies
         # Prevent double-loading of SentenceTransformers by seeing if one exists
         vector_store = VectorStoreService(collection_name=collection_name)
@@ -121,10 +121,40 @@ class RAGChain:
         return "\n\n".join(doc.page_content for doc in docs)
 
     def _build_question_with_history(self, question: str) -> str:
-        """For a 1B parameter model, injecting raw dialogue history into the prompt 
-        causes instruction-tuning confusion and ruins BM25 keyword search accuracy.
-        We will pass exactly what the user typed to maximize RAG precision."""
-        return question
+        """Enrich vague follow-up questions with recent chat history so the
+        retriever knows what the user is referring to."""
+        if not self.chat_history:
+            return question
+
+        # Take the last N exchanges from memory
+        recent = self.chat_history[-self.memory_window:]
+        history_lines = []
+        for turn in recent:
+            history_lines.append(f"User: {turn['question']}")
+            # Include a larger snippet of the answer for richer context
+            short_answer = turn["answer"][:300]
+            history_lines.append(f"AI: {short_answer}")
+
+        history_str = "\n".join(history_lines)
+        return f"Given this conversation history:\n{history_str}\n\nNew question: {question}"
+
+    def _format_chat_history_for_llm(self) -> str:
+        """Format the full chat history as a readable transcript for the LLM prompt.
+
+        This gives the LLM direct visibility into the entire conversation,
+        enabling it to handle meta-questions like 'what did we just discuss?'
+        and properly contextualise follow-up queries.
+        """
+        if not self.chat_history:
+            return "No previous conversation."
+
+        recent = self.chat_history[-self.memory_window:]
+        lines = []
+        for turn in recent:
+            lines.append(f"User: {turn['question']}")
+            # Give the LLM more answer content than the retriever gets
+            lines.append(f"Assistant: {turn['answer'][:500]}")
+        return "\n".join(lines)
 
     def ask(self, question: str) -> dict:
         """Ask a question and get an answer with source documents.

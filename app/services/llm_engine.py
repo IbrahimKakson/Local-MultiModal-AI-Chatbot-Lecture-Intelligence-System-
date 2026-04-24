@@ -1,9 +1,9 @@
-"""LLM engine integration (LlamaCpp / Phi-3 Mini) - renamed from llm_service.
+"""LLM engine integration (LlamaCpp / Llama-3.2).
 """
 import os
 import multiprocessing
 from app.core.config import settings
-from app.core.prompts import LLAMA3_RAG_TEMPLATE
+from app.core.prompts import LLAMA3_RAG_TEMPLATE, LLAMA3_RAG_TEMPLATE_WITH_HISTORY
 
 try:
     from llama_cpp import Llama
@@ -46,13 +46,18 @@ def load_model(model_name: str = "Llama-3.2-1B-Instruct-Q4_K_M.gguf"):
     )
     return _llm_instance
 
-def generate_answer_from_model(query: str, context: list[str] | None = None) -> str:
+def generate_answer_from_model(query: str, context: list[str] | None = None, chat_history: str | None = None) -> str:
     """Generate an answer from the locally loaded model."""
     llm = load_model()
 
     if context and any(context):
         context_str = "\n\n".join(context)
-        prompt = LLAMA3_RAG_TEMPLATE.format(context=context_str, question=query)
+        if chat_history:
+            prompt = LLAMA3_RAG_TEMPLATE_WITH_HISTORY.format(
+                chat_history=chat_history, context=context_str, question=query
+            )
+        else:
+            prompt = LLAMA3_RAG_TEMPLATE.format(context=context_str, question=query)
     else:
         # Pure conversational prompt for short greetings without strict RAG rules
         prompt = f"<|start_header_id|>system<|end_header_id|>\nYou are a helpful and friendly tutor assistant. Speak naturally.<|eot_id|><|start_header_id|>user<|end_header_id|>\n{query}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"
@@ -70,7 +75,7 @@ def generate_answer_from_model(query: str, context: list[str] | None = None) -> 
     return response["choices"][0]["text"].strip()
 
 
-def stream_answer_from_model(query: str, context: list[str] | None = None):
+def stream_answer_from_model(query: str, context: list[str] | None = None, chat_history: str | None = None):
     """Stream tokens one-by-one from the locally loaded model.
 
     Yields individual text tokens as they are generated (for real-time UI).
@@ -79,7 +84,12 @@ def stream_answer_from_model(query: str, context: list[str] | None = None):
 
     if context and any(context):
         context_str = "\n\n".join(context)
-        prompt = LLAMA3_RAG_TEMPLATE.format(context=context_str, question=query)
+        if chat_history:
+            prompt = LLAMA3_RAG_TEMPLATE_WITH_HISTORY.format(
+                chat_history=chat_history, context=context_str, question=query
+            )
+        else:
+            prompt = LLAMA3_RAG_TEMPLATE.format(context=context_str, question=query)
     else:
         prompt = f"<|start_header_id|>system<|end_header_id|>\nYou are a helpful and friendly tutor assistant. Speak naturally.<|eot_id|><|start_header_id|>user<|end_header_id|>\n{query}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"
 

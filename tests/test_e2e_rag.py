@@ -1,4 +1,4 @@
-"""End-to-End test for the Week 8 LangChain RAG orchestration.
+"""End-to-End test for the LangChain RAG orchestration.
 Run with: python -m tests.test_e2e_rag
 """
 import time
@@ -9,7 +9,7 @@ from app.services.rag_chain import RAGChain
 
 def main():
     print("=" * 60)
-    print("  Week 8 E2E Test: LangChain RAG Orchestration")
+    print("  E2E Test: LangChain RAG Orchestration")
     print("=" * 60)
 
     # Step 1: Seed the vector database with fake lecture content
@@ -35,9 +35,9 @@ def main():
     print("   Done. 5 chunks inserted.")
 
     # Step 2: Build the RAG Chain
-    print("\n[2/4] Building RAG chain (loading Phi-3 LLM)...")
+    print("\n[2/4] Building RAG chain (loading Llama-3.2 LLM)...")
     start = time.time()
-    rag = RAGChain(top_k=3)
+    rag = RAGChain(top_k=3, collection_name="e2e_test")
     print(f"   Chain ready in {time.time() - start:.2f}s.")
 
     # Step 3: Ask a question (first turn)

@@ -1,17 +1,16 @@
-"""Manual Interactive Chat - Week 8 Testing.
+"""Manual Interactive Chat Testing.
 Demonstrates the BEFORE (raw LLM) vs AFTER (full RAG chain with memory).
-Type 'quit' to exit.
 """
 import time
 
 def run_before_demo():
-    """BEFORE (Week 7): Raw LLM with hardcoded context, no memory."""
+    """BEFORE: Raw LLM with hardcoded context, no memory."""
     from app.services.llm_engine import load_model, generate_answer_from_model
 
     print("=" * 60)
-    print("  BEFORE (Week 7): Raw LLM - No database, no memory")
+    print("  BEFORE: Raw LLM - No database, no memory")
     print("=" * 60)
-    print("\nLoading Phi-3...")
+    print("\nLoading Llama-3.2...")
     load_model()
     print("Ready!\n")
 
@@ -30,11 +29,12 @@ def run_before_demo():
     print(f"({time.time() - start:.1f}s)\n")
 
     # Turn 2 - follow up (the LLM has NO idea what we just talked about)
+    # We intentionally pass NO context to show the model is stateless
     q2 = "Can you explain more about that?"
     print(f"You: {q2}")
     print("Thinking...")
     start = time.time()
-    a2 = generate_answer_from_model(query=q2, context=fake_context)
+    a2 = generate_answer_from_model(query=q2, context=[])
     print(f"AI: {a2}")
     print(f"({time.time() - start:.1f}s)\n")
 
@@ -43,18 +43,18 @@ def run_before_demo():
 
 
 def run_after_demo():
-    """AFTER (Week 8): Full RAG chain with database search + memory."""
+    """AFTER: Full RAG chain with database search + memory."""
     from app.services.vector_store import VectorStoreService
     from app.services.search_service import SearchService
     from app.services.rag_chain import RAGChain
 
     print("=" * 60)
-    print("  AFTER (Week 8): Full RAG Chain - Database + Memory")
+    print("  AFTER: Full RAG Chain - Database + Memory")
     print("=" * 60)
 
     # Step 1: Seed the database with lecture content
     print("\n[Setup] Loading lecture content into vector database...")
-    vs = VectorStoreService(collection_name="week8_demo")
+    vs = VectorStoreService(collection_name="manual_chat_demo")
     vs.add_documents(
         texts=[
             "Photosynthesis is the process by which green plants convert sunlight into chemical energy stored as glucose.",
@@ -76,7 +76,7 @@ def run_after_demo():
 
     # Step 2: Build the chain
     print("[Setup] Building RAG chain...")
-    rag = RAGChain(top_k=3)
+    rag = RAGChain(top_k=3, collection_name="manual_chat_demo")
     print("[Setup] Ready!\n")
 
     # Turn 1
@@ -104,13 +104,13 @@ def run_after_demo():
     print("    the chat history is injected into every prompt.\n")
 
     # Cleanup
-    vs.chroma_client.delete_collection("week8_demo")
+    vs.chroma_client.delete_collection("manual_chat_demo")
     print("[Cleanup] Test collection removed.")
 
 
 if __name__ == "__main__":
     print("\nThis demo runs the SAME two questions through both systems")
-    print("so you can see exactly what changed between Week 7 and Week 8.\n")
+    print("so you can see exactly what changed between the raw LLM and the full RAG system.\n")
 
     run_before_demo()
 
@@ -125,6 +125,6 @@ if __name__ == "__main__":
     print("=" * 60)
     print("  BEFORE: You manually pass context. No memory. No search.")
     print("  AFTER:  The chain searches the DB automatically,")
-    print("          picks the best chunks, feeds them to Phi-3,")
+    print("          picks the best chunks, feeds them to Llama-3.2,")
     print("          AND remembers what you said before.")
     print("=" * 60)

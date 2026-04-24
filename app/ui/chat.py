@@ -1,6 +1,6 @@
 """Chainlit UI for the Lecture Intelligence System.
 
-Week 9: Implements real-time token streaming and source citations.
+Implements real-time token streaming and source citations.
 All services are called directly in-process (no HTTP dependency).
 """
 import os
@@ -18,7 +18,6 @@ from app.services.vector_store import VectorStoreService
 from app.services.search_service import SearchService
 from app.services.rag_chain import RAGChain
 from app.services.llm_engine import stream_answer_from_model
-from app.core.prompts import PHI3_RAG_TEMPLATE
 
 
 async def process_file(file, collection_name: str):
@@ -120,7 +119,7 @@ async def on_chat_start():
 
     # Initialize the RAG chain for this session, scoped to this session's collection
     # Reduced top_k to 3 to speed up CPU inference times
-    rag = RAGChain(top_k=2, memory_window=2, collection_name=collection_name)
+    rag = RAGChain(top_k=2, memory_window=5, collection_name=collection_name)
     cl.user_session.set("rag_chain", rag)
 
 
@@ -163,9 +162,12 @@ async def on_message(message: cl.Message):
     msg = cl.Message(content="")
     await msg.send()
 
+    # Build the chat history string so the LLM can see past conversation turns
+    chat_history_str = rag._format_chat_history_for_llm()
+
     full_answer = ""
     context_list = [context] if context else None
-    for token in stream_answer_from_model(query=enriched_question, context=context_list):
+    for token in stream_answer_from_model(query=enriched_question, context=context_list, chat_history=chat_history_str):
         full_answer += token
         await msg.stream_token(token)
 
@@ -186,17 +188,32 @@ async def on_message(message: cl.Message):
             meta = doc.metadata
             source_name = meta.get("source", "Unknown")
 
-            if source_name in sources_seen:
-                continue
-            sources_seen.add(source_name)
-
             if "page" in meta:
+                cite_key = f"{source_name}_p{meta['page']}"
+                if cite_key in sources_seen:
+                    continue
+                sources_seen.add(cite_key)
                 citation_lines.append(f"📄 **{source_name}** — Page {meta['page']}")
+
             elif "start" in meta:
                 start = float(meta["start"])
+                cite_key = f"{source_name}_{int(start)}"
+                if cite_key in sources_seen:
+                    continue
+                sources_seen.add(cite_key)
                 mins, secs = divmod(int(start), 60)
-                citation_lines.append(f"🎧 **{source_name}** — Timestamp {mins}:{secs:02d}")
+                timestamp_label = f"{mins}:{secs:02d}"
+                # Render a clickable span — custom.js MutationObserver attaches the click handler
+                citation_lines.append(
+                    f'🎧 **{source_name}** — '
+                    f'<span class="seek-timestamp" data-seconds="{start}" '
+                    f'style="color:#4fc3f7;cursor:pointer;text-decoration:underline;font-weight:bold;">'
+                    f'⏱ Jump to {timestamp_label}</span>'
+                )
             else:
+                if source_name in sources_seen:
+                    continue
+                sources_seen.add(source_name)
                 citation_lines.append(f"📎 **{source_name}**")
 
         if citation_lines:

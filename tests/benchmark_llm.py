@@ -9,7 +9,7 @@ def run_benchmark():
         load_model()
     except FileNotFoundError as e:
         print(f"FAILED: {e}")
-        print("Please ensure you have downloaded 'Phi-3-mini-4k-instruct-q4.gguf' to data/models/")
+        print("Please ensure you have downloaded 'Llama-3.2-1B-Instruct-Q4_K_M.gguf' to data/models/")
         return
     except ImportError as e:
         print(f"FAILED: {e}")
@@ -18,18 +18,22 @@ def run_benchmark():
     load_time = time.time() - start_load
     print(f"Model loaded successfully in {load_time:.2f} seconds.\n")
 
-    print("Running a test RAG query...")
+    print("Running a test RAG query (with Performance Tracking)...")
     context = ["The capital of France is Paris. It is known for the Eiffel Tower."]
     query = "What is the capital of France and what is it known for?"
     
-    start_infer = time.time()
-    answer = generate_answer_from_model(query=query, context=context)
-    infer_time = time.time() - start_infer
-
+    # Apply the decorator locally for the test
+    from tests.performance_decorator import measure_generation_performance
+    from app.services.llm_engine import stream_answer_from_model
+    
+    tracked_stream = measure_generation_performance(stream_answer_from_model)
+    
     print("================ Response ================")
-    print(answer)
-    print("==========================================")
-    print(f"Inference generated in {infer_time:.2f} seconds.")
+    answer = ""
+    for token in tracked_stream(query=query, context=context):
+        print(token, end="", flush=True)
+        answer += token
+    print("\n==========================================")
 
 if __name__ == "__main__":
     run_benchmark()
